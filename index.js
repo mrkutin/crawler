@@ -15,15 +15,15 @@ puppeteer.use(StealthPlugin())
 
 const {scrollPageToBottom, scrollPageToTop} = require('puppeteer-autoscroll-down')
 
+const headers = ['row', 'policyId', 'company', 'status', 'policyTerm', 'makeAndModel', 'licensePlate', 'vin', 'powerHp', 'vehicleInTransit', 'trailerAllowed', 'usingPurpose', 'hasRestrictions', 'policyHolder', 'vehicleOwner', 'KBM', 'region', 'premium']
+// const texts = ["1", "ХХХ 0226901657", "САО \"ВСК\"", "Действует", "Период использования ТС активен на запрашиваемую дату", "Марка и модель транспортного средства (категория \"Х\")\tLexus IS (категория «B»)\nГосударственный регистрационный знак\tХ290КК777\nVIN\tJTHBK262402022481\nМощность двигателя для категории B, л.с.\t208.00", "Нет", "Нет", "Личная", "Ограничен список лиц, допущенных к управлению (допущено: 3 чел.)", "М***** АЛЕКСЕЙ СЕРГЕЕВИЧ 19.06.1991", "М***** АЛЕКСЕЙ СЕРГЕЕВИЧ 19.06.1991", "0.65", "Оренбургская обл, г Оренбург", "7788.38 руб."]
+
+
 // puppeteer usage as normal
 puppeteer.launch({
-    headless: false,
-    executablePath: executablePath(),
-    defaultViewport: {
-        width: 1920,
-        height: 1080
-    },
-    //args: [ '--proxy-server=http://80.244.229.102:10000' ]
+    headless: false, executablePath: executablePath(), defaultViewport: {
+        width: 1920, height: 1080
+    }, //args: [ '--proxy-server=http://80.244.229.102:10000' ]
 }).then(async browser => {
     console.log('Running tests..')
     const page = await browser.newPage()
@@ -35,32 +35,24 @@ puppeteer.launch({
     await page.waitForSelector('#tsBlockTab')
     await page.click('#tsBlockTab')
 
-    await page.focus('#vin')
-    // await page.focus('#licensePlate')
-    await page.keyboard.type('Jthbk262402022481')
+    await page.focus('#licensePlate')
+    await page.keyboard.type('р001нн77')
+
+    // await page.focus('#vin')
+    // await page.keyboard.type('Jthbk262402022481')
 
     await page.click('#buttonFind')
     await page.waitForNavigation({waitUntil: 'networkidle2'})
 
-    //todo const texts = await page.evaluate(() => Array.from(document.querySelectorAll('tr.data-row > td')).map(el => el.innerText))
-    const headers = ['№', 'Серия и номер договора ОСАГО', 'Наименование страховой организации', 'Статус договора ОСАГО', 'Срок действия и период использования транспортного средства договора ОСАГО', 'Сведения о транспортном средстве', 'Транспортное средство следует к месту регистрации или к месту проведения технического осмотра', 'Управление транспортным средством с прицепом', 'Цель использования транспортного средства', 'Договор ОСАГО с ограничениями/без ограничений лиц, допущенных к управлению транспортным средством', 'Сведения о страхователе транспортного средства', 'Сведения о собственнике транспортного средства', 'КБМ по договору ОСАГО', 'Транспортное средство используется в регионе', 'Страховая премия']
-    const texts = [
-        "1",
-        "ХХХ 0226901657",
-        "САО \"ВСК\"",
-        "Действует",
-        "Период использования ТС активен на запрашиваемую дату",
-        "Марка и модель транспортного средства (категория \"Х\")\tLexus IS (категория «B»)\nГосударственный регистрационный знак\tХ290КК777\nVIN\tJTHBK262402022481\nМощность двигателя для категории B, л.с.\t208.00",
-        "Нет",
-        "Нет",
-        "Личная",
-        "Ограничен список лиц, допущенных к управлению (допущено: 3 чел.)",
-        "М***** АЛЕКСЕЙ СЕРГЕЕВИЧ 19.06.1991",
-        "М***** АЛЕКСЕЙ СЕРГЕЕВИЧ 19.06.1991",
-        "0.65",
-        "Оренбургская обл, г Оренбург",
-        "7788.38 руб."
-    ]
+    const texts = await page.evaluate(() => Array.from(document.querySelectorAll('tr.data-row > td')).map(el => el.innerText))
+    const flattenedTexts = texts.map(el => el.split('\n').map(el => {
+        const split = el.split('\t')
+        return split[1] || split[0]
+    })).flat(2)
+    const insurance = flattenedTexts.reduce((acc, text, idx) => {
+        acc[headers[idx]] = text
+        return acc
+    }, {})
     console.log()
 
     // const sessionData = await page.session.dump()
